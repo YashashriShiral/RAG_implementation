@@ -1,0 +1,100 @@
+name: RAG Quality Gate (RAGAS Evaluation)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  rag-eval:
+    name: RAGAS Quality Evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_HOST: https://cloud.langfuse.com
+      OLLAMA_MODEL: llama3.2
+      PYTHONPATH: .
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 5
+          ollama pull llama3.2
+
+      - name: Start FastAPI server
+        run: |
+          python -m app.api &
+          sleep 8  # Wait for startup
+
+      - name: Run ingestion (test PDFs)
+        run: python -m app.ingestion
+        continue-on-error: true  # OK if no PDFs in CI
+
+      - name: Run RAGAS evaluation
+        id: ragas
+        run: python -m evaluation.ragas_eval
+
+      - name: Upload evaluation results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ragas-results
+          path: evaluation/results/
+
+      - name: Comment PR with results (if PR)
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const latest = JSON.parse(fs.readFileSync('evaluation/results/latest.json', 'utf8'));
+            const body = `## 🔬 RAGAS Evaluation Results\n\n` +
+              `| Metric | Score | Threshold | Status |\n` +
+              `|--------|-------|-----------|--------|\n` +
+              Object.entries(latest).map(([k, v]) => {
+                const thresholds = { faithfulness: 0.75, answer_relevancy: 0.70, context_precision: 0.65, context_recall: 0.60 };
+                const t = thresholds[k] || 0;
+                const pass = v >= t ? '✅ Pass' : '❌ Fail';
+                return `| ${k} | ${(v*100).toFixed(1)}% | ${(t*100).toFixed(0)}% | ${pass} |`;
+              }).join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - run: pytest tests/ -v --tb=short
+        env:
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          PYTHONPATH: .

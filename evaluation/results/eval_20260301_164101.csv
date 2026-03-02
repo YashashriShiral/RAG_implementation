@@ -1,0 +1,27 @@
+question,answer_preview,faithfulness_score,answer_relevancy,context_precision,context_recall,confidence,has_citation,latency_sec,tokens,sources_count
+What is endometriosis and how does it develop?,"**What is Endometriosis?**
+
+Endometriosis is a female reproductive system disorder where the endometrium-like tissue develops outside of the uterus [195E363][Cureus 0014 00000028864]. It affects the o…",0.3655,0.0206,0.25,0.5,0.932,True,14.22,765,5
+What are the most effective treatments for endometriosis pain?,"**Effective Treatments for Endometriosis Pain**
+
+Endometriosis pain is a debilitating symptom that affects many women. According to [Bcw918 Endometriosisanoverview 2012 Nov], medications can stop ovul…",0.2011,0.0412,0.8333,0.4211,0.978,True,12.92,817,5
+How does endometriosis affect fertility?,"**Impact of Endometriosis on Fertility**
+
+Endometriosis can have a significant impact on fertility, affecting up to 50% of women with the condition [1-3]. The exact mechanisms by which endometriosis a…",0.0741,0.0172,0.25,0.2353,0.972,True,14.77,784,3
+What is the role of estrogen in endometriosis?,"**Role of Estrogen in Endometriosis**
+
+Estrogen plays a crucial role in the pathogenesis and progression of endometriosis. According to [Czubakp.Etall.Understandingendometriosisabroadreviewofitscauses…",0.2372,0.033,0.75,0.2381,0.946,True,16.51,867,5
+What are the genetic factors associated with endometriosis?,"**Genetic Factors Associated with Endometriosis**
+
+Endometriosis has been found to have a genetic inheritance pattern, with multiple loci linked to the endometriosis phenotype [Czubakp.Etall.Understan…",0.184,0.0645,1.0,0.3125,0.983,True,14.63,698,4
+What are the stages of endometriosis?,"**Stages of Endometriosis**
+
+The stages of endometriosis are a way to show the degree of scarring or adhesions, which can indicate how likely it is for a woman to become pregnant [Bcw918 Endometriosis…",0.2321,0.0317,0.6667,0.4737,0.995,True,10.68,512,3
+What are the symptoms of endometriosis?,"**Symptoms of Endometriosis**
+
+Endometriosis can manifest with a wide range of symptoms, which can vary in severity and impact quality of life. The primary symptoms include:
+
+* Chronic pelvic pain [Cz…",0.1942,0.0247,0.6667,0.5294,0.995,True,17.42,786,4
+How is endometriosis diagnosed?,"Diagnosis of Endometriosis:
+
+The definitive diagnosis of endometriosis is surgical, usually via laparoscopy with histopathological confirmation [Endometriosis Pathogenesis And Sequelae, Page 6]. Lapar…",0.1855,0.0189,0.3333,0.3333,0.986,True,8.1,525,4

@@ -1,0 +1,128 @@
+{
+  "timestamp": "20260301_164101",
+  "n_questions": 8,
+  "scores": {
+    "faithfulness_score": 0.2092,
+    "answer_relevancy": 0.0315,
+    "context_precision": 0.5938,
+    "context_recall": 0.3804,
+    "avg_confidence": 0.9734,
+    "avg_latency_sec": 13.66,
+    "avg_tokens": 719.0,
+    "citation_rate": 1.0
+  },
+  "thresholds": {
+    "faithfulness_score": 0.3,
+    "answer_relevancy": 0.3,
+    "context_precision": 0.3,
+    "context_recall": 0.25,
+    "citation_rate": 0.5
+  },
+  "passed": false,
+  "per_question": [
+    {
+      "question": "What is endometriosis and how does it develop?",
+      "answer_preview": "**What is Endometriosis?**\n\nEndometriosis is a female reproductive system disorder where the endometrium-like tissue develops outside of the uterus [195E363][Cureus 0014 00000028864]. It affects the o\u2026",
+      "faithfulness_score": 0.3655,
+      "answer_relevancy": 0.0206,
+      "context_precision": 0.25,
+      "context_recall": 0.5,
+      "confidence": 0.932,
+      "has_citation": true,
+      "latency_sec": 14.22,
+      "tokens": 765,
+      "sources_count": 5
+    },
+    {
+      "question": "What are the most effective treatments for endometriosis pain?",
+      "answer_preview": "**Effective Treatments for Endometriosis Pain**\n\nEndometriosis pain is a debilitating symptom that affects many women. According to [Bcw918 Endometriosisanoverview 2012 Nov], medications can stop ovul\u2026",
+      "faithfulness_score": 0.2011,
+      "answer_relevancy": 0.0412,
+      "context_precision": 0.8333,
+      "context_recall": 0.4211,
+      "confidence": 0.978,
+      "has_citation": true,
+      "latency_sec": 12.92,
+      "tokens": 817,
+      "sources_count": 5
+    },
+    {
+      "question": "How does endometriosis affect fertility?",
+      "answer_preview": "**Impact of Endometriosis on Fertility**\n\nEndometriosis can have a significant impact on fertility, affecting up to 50% of women with the condition [1-3]. The exact mechanisms by which endometriosis a\u2026",
+      "faithfulness_score": 0.0741,
+      "answer_relevancy": 0.0172,
+      "context_precision": 0.25,
+      "context_recall": 0.2353,
+      "confidence": 0.972,
+      "has_citation": true,
+      "latency_sec": 14.77,
+      "tokens": 784,
+      "sources_count": 3
+    },
+    {
+      "question": "What is the role of estrogen in endometriosis?",
+      "answer_preview": "**Role of Estrogen in Endometriosis**\n\nEstrogen plays a crucial role in the pathogenesis and progression of endometriosis. According to [Czubakp.Etall.Understandingendometriosisabroadreviewofitscauses\u2026",
+      "faithfulness_score": 0.2372,
+      "answer_relevancy": 0.033,
+      "context_precision": 0.75,
+      "context_recall": 0.2381,
+      "confidence": 0.946,
+      "has_citation": true,
+      "latency_sec": 16.51,
+      "tokens": 867,
+      "sources_count": 5
+    },
+    {
+      "question": "What are the genetic factors associated with endometriosis?",
+      "answer_preview": "**Genetic Factors Associated with Endometriosis**\n\nEndometriosis has been found to have a genetic inheritance pattern, with multiple loci linked to the endometriosis phenotype [Czubakp.Etall.Understan\u2026",
+      "faithfulness_score": 0.184,
+      "answer_relevancy": 0.0645,
+      "context_precision": 1.0,
+      "context_recall": 0.3125,
+      "confidence": 0.983,
+      "has_citation": true,
+      "latency_sec": 14.63,
+      "tokens": 698,
+      "sources_count": 4
+    },
+    {
+      "question": "What are the stages of endometriosis?",
+      "answer_preview": "**Stages of Endometriosis**\n\nThe stages of endometriosis are a way to show the degree of scarring or adhesions, which can indicate how likely it is for a woman to become pregnant [Bcw918 Endometriosis\u2026",
+      "faithfulness_score": 0.2321,
+      "answer_relevancy": 0.0317,
+      "context_precision": 0.6667,
+      "context_recall": 0.4737,
+      "confidence": 0.995,
+      "has_citation": true,
+      "latency_sec": 10.68,
+      "tokens": 512,
+      "sources_count": 3
+    },
+    {
+      "question": "What are the symptoms of endometriosis?",
+      "answer_preview": "**Symptoms of Endometriosis**\n\nEndometriosis can manifest with a wide range of symptoms, which can vary in severity and impact quality of life. The primary symptoms include:\n\n* Chronic pelvic pain [Cz\u2026",
+      "faithfulness_score": 0.1942,
+      "answer_relevancy": 0.0247,
+      "context_precision": 0.6667,
+      "context_recall": 0.5294,
+      "confidence": 0.995,
+      "has_citation": true,
+      "latency_sec": 17.42,
+      "tokens": 786,
+      "sources_count": 4
+    },
+    {
+      "question": "How is endometriosis diagnosed?",
+      "answer_preview": "Diagnosis of Endometriosis:\n\nThe definitive diagnosis of endometriosis is surgical, usually via laparoscopy with histopathological confirmation [Endometriosis Pathogenesis And Sequelae, Page 6]. Lapar\u2026",
+      "faithfulness_score": 0.1855,
+      "answer_relevancy": 0.0189,
+      "context_precision": 0.3333,
+      "context_recall": 0.3333,
+      "confidence": 0.986,
+      "has_citation": true,
+      "latency_sec": 8.1,
+      "tokens": 525,
+      "sources_count": 4
+    }
+  ]
+}

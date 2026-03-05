@@ -1,4 +1,9 @@
 # 🔬 Endo Research AI
+
+EndoSearchAI: A privacy-first, fully local RAG system delivering endometriosis insights grounded strictly in medical research, with secure fallback web search when evidence is unavailable. 
+
+For an overview of the inspiration and motivation behind this application, please refer to this article: https://medium.com/@yashashriShiral/ai-powered-endometriosis-management-app-part-1-ff72ddf20fb6
+
 Answers endometriosis questions from research PDFs. Falls back to Tavily web search when the question is out of scope.
 
 **Stack:** LLaMA 3.2 (Ollama) · LangGraph · BM25 + ChromaDB · Cohere rerank · FastAPI · Streamlit · SQLite

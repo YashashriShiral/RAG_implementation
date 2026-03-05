@@ -1,6 +1,6 @@
 # 🔬 Endo Research AI
 
-EndoSearchAI: A privacy-first, fully local RAG system delivering endometriosis insights grounded strictly in medical research, with secure fallback web search when evidence is unavailable. 
+EndoReSearchAI: A privacy-first, fully local RAG system delivering endometriosis insights grounded strictly in medical research, with secure fallback web search when evidence is unavailable. 
 
 For an overview of the inspiration and motivation behind this application, please refer to this article: https://medium.com/@yashashriShiral/ai-powered-endometriosis-management-app-part-1-ff72ddf20fb6
 

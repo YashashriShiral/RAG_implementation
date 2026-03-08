@@ -4,6 +4,8 @@ EndoResearchAI: A privacy-first, fully local RAG system delivering endometriosis
 
 For an overview of the inspiration and motivation behind this application, please refer to this article: https://medium.com/@yashashriShiral/ai-powered-endometriosis-management-app-part-1-ff72ddf20fb6
 
+Application Video link: https://youtu.be/R-zqPIZqIfA
+
 Answers endometriosis questions from research PDFs. Falls back to Tavily web search when the question is out of scope.
 
 **Stack:** LLaMA 3.2 (Ollama) · LangGraph · BM25 + ChromaDB · Cohere rerank · FastAPI · Streamlit · SQLite

@@ -20,11 +20,10 @@ import time
 from typing import List, Dict, Optional
 
 from langchain.schema import Document
-from langchain_ollama import OllamaLLM
 from loguru import logger
-
 from app.config import get_settings
 from app.graph.state import RAGState
+from app.llm_client import llm_complete
 
 settings = get_settings()
 
@@ -71,15 +70,16 @@ ANSWER:"""
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-def get_llm() -> OllamaLLM:
-    return OllamaLLM(
-        model=settings.ollama_model,
-        base_url=settings.ollama_base_url,
-        temperature=0.1,
-        top_p=0.9,
-        num_ctx=4096,
-        repeat_penalty=1.1,
-    )
+class _LLMWrapper:
+    """Wraps llm_client so nodes can call llm.invoke(prompt) unchanged."""
+    def __init__(self, temperature=0.1):
+        self.temperature = temperature
+    def invoke(self, prompt: str) -> str:
+        return llm_complete(system="", prompt=prompt,
+                           max_tokens=1024, temperature=self.temperature)
+
+def get_llm(temperature=0.1):
+    return _LLMWrapper(temperature=temperature)
 
 
 def format_context(docs: List[Document]) -> tuple[str, List[Dict]]:

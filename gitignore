@@ -1,0 +1,77 @@
+# ── Environment & Secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+.env.*
+!.env.example
+
+# ── Data & Databases ──────────────────────────────────────────────────────────
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── OS files ──────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── ML / Model weights ────────────────────────────────────────────────────────
+*.pt
+*.pth
+*.bin
+*.safetensors
+models/
+
+# ── ChromaDB (vector store — rebuilt from PDFs) ───────────────────────────────
+data/chroma_db/
+
+# ── BM25 index (rebuilt on startup) ──────────────────────────────────────────
+data/bm25_index.pkl
+
+# ── Evaluation results (optional to commit) ──────────────────────────────────
+evaluation/results/
+
+# ── Streamlit cache ───────────────────────────────────────────────────────────
+.streamlit/secrets.toml
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+.dockerignore
+
+# ── User profile (personal data) ─────────────────────────────────────────────
+data/user_profile.json

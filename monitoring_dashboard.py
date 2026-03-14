@@ -16,6 +16,32 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ── Admin password protection ────────────────────────────────────────────────
+import os as _os
+ADMIN_PASSWORD = _os.getenv("ADMIN_PASSWORD", "endo-admin-2026")
+
+def _check_password():
+    if st.session_state.get("admin_auth"):
+        return True
+    st.markdown("""
+    <div style='max-width:400px;margin:4rem auto;text-align:center;'>
+      <div style='font-size:2rem;margin-bottom:1rem;'>🔒</div>
+      <div style='font-size:1.2rem;font-weight:700;margin-bottom:.5rem;'>Admin Access</div>
+      <div style='color:#8b949e;font-size:.85rem;margin-bottom:1.5rem;'>RAG Monitoring Dashboard</div>
+    </div>
+    """, unsafe_allow_html=True)
+    pwd = st.text_input("Password", type="password", key="admin_pwd")
+    if st.button("Login", use_container_width=False):
+        if pwd == ADMIN_PASSWORD:
+            st.session_state["admin_auth"] = True
+            st.rerun()
+        else:
+            st.error("Wrong password")
+    return False
+
+if not _check_password():
+    st.stop()
+
 # ── CSS injection into parent page ────────────────────────────────────────────
 components.html("""<script>
 const css = `
@@ -116,7 +142,7 @@ with h2:
         st.cache_data.clear(); st.rerun()
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["📈 Overview", "🔍 Queries", "🧪 Evaluations"])
+tab1, tab2, tab3, tab4 = st.tabs(["📈 Overview", "🔍 Queries", "🧪 Evaluations", "🩺 Parse Quality"])
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — OVERVIEW
@@ -358,6 +384,175 @@ with tab3:
                 if compare_rows:
                     st.dataframe(pd.DataFrame(compare_rows),
                         use_container_width=True, hide_index=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TAB 4 — PARSE QUALITY
+# ═══════════════════════════════════════════════════════════════════════════════
+with tab4:
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parent))
+    
+    st.markdown("""
+    <div style='padding:.4rem 0 .8rem 0;'>
+      <span style='font-family:Lora,serif;font-size:1.1rem;font-weight:700;color:#2c1810;'>
+        🔍 Parse Quality Monitor
+      </span>
+      <span style='font-size:.78rem;color:#9e8880;margin-left:.8rem;'>
+        How well is LLaMA understanding your WhatsApp messages?
+      </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    try:
+        from app.daily_log_db import get_parse_logs, init_parse_log_table
+        import json as _pjson
+        init_parse_log_table()
+
+        pq_days = st.selectbox("Show last", [7, 14, 30, 60], index=1, key="pq_days")
+        plogs   = get_parse_logs(days=pq_days)
+
+        if not plogs:
+            st.info("No parse logs yet — data appears after your next WhatsApp message.")
+        else:
+            pdf = pd.DataFrame(plogs)
+
+            # ── Summary metrics ───────────────────────────────────────────────
+            total     = len(pdf)
+            llm1      = len(pdf[pdf["parse_source"] == "llama_attempt1"])
+            llm2      = len(pdf[pdf["parse_source"] == "llama_attempt2"])
+            regex     = len(pdf[pdf["parse_source"] == "regex_fallback"])
+            llm_rate  = round((llm1 + llm2) / total * 100, 1)
+            avg_fields= round(pdf["fields_extracted"].mean(), 1)
+            completeness = round(avg_fields / 17 * 100, 1)
+
+            st.markdown('<p style="font-size:.78rem;font-weight:600;color:#9e8880;letter-spacing:.05em;margin:.5rem 0 .4rem 0;">OVERALL PARSE QUALITY</p>', unsafe_allow_html=True)
+            m1, m2, m3, m4 = st.columns(4)
+
+            def _metric_card(col, emoji, label, value, sub, good=True):
+                color = "#7cb69b" if good else "#e8857a"
+                col.markdown(f"""
+                <div style='background:#ffffff;border:1px solid #e8ddd6;border-radius:10px;
+                     padding:.8rem 1rem;'>
+                  <div style='font-size:.72rem;color:#9e8880;'>{emoji} {label}</div>
+                  <div style='font-size:1.4rem;font-weight:700;color:#2c1810;'>{value}</div>
+                  <div style='font-size:.7rem;color:{color};font-weight:600;'>{sub}</div>
+                </div>""", unsafe_allow_html=True)
+
+            _metric_card(m1, "🧠", "LLaMA Success Rate", f"{llm_rate}%",
+                         "✅ Good" if llm_rate >= 80 else "⚠️ Check prompts", llm_rate >= 80)
+            _metric_card(m2, "📋", "Avg Fields Extracted", f"{avg_fields}/17",
+                         f"{completeness}% completeness", completeness >= 60)
+            _metric_card(m3, "🔄", "Retry Used",
+                         f"{llm2}x", f"{round(llm2/total*100,1)}% of messages", llm2/total < 0.2)
+            _metric_card(m4, "🔁", "Regex Fallback",
+                         f"{regex}x", f"{round(regex/total*100,1)}% of messages", regex/total < 0.1)
+
+            st.markdown("<div style='height:.8rem'></div>", unsafe_allow_html=True)
+
+            # ── Attempt breakdown bar ─────────────────────────────────────────
+            st.markdown('<p style="font-size:.78rem;font-weight:600;color:#9e8880;letter-spacing:.05em;margin:.5rem 0 .4rem 0;">PARSE SOURCE BREAKDOWN</p>', unsafe_allow_html=True)
+            b1, b2, b3 = st.columns(3)
+            for col, label, count, color, desc in [
+                (b1, "🟢 LLaMA Attempt 1", llm1, "#7cb69b", "Parsed correctly first try"),
+                (b2, "🟡 LLaMA Attempt 2", llm2, "#e8c97a", "Needed re-prompt"),
+                (b3, "🔴 Regex Fallback",  regex, "#e8857a", "LLaMA failed, used regex"),
+            ]:
+                pct = round(count / total * 100, 1) if total else 0
+                col.markdown(f"""
+                <div style='background:#ffffff;border:1px solid #e8ddd6;border-radius:10px;
+                     padding:.8rem 1rem;text-align:center;'>
+                  <div style='font-size:.8rem;font-weight:600;color:#2c1810;'>{label}</div>
+                  <div style='font-size:2rem;font-weight:700;color:{color};'>{count}</div>
+                  <div style='font-size:.72rem;color:#9e8880;'>{pct}% · {desc}</div>
+                  <div style='height:6px;background:#e8ddd6;border-radius:3px;margin-top:.5rem;'>
+                    <div style='width:{pct}%;height:6px;background:{color};border-radius:3px;'></div>
+                  </div>
+                </div>""", unsafe_allow_html=True)
+
+            st.markdown("<div style='height:.8rem'></div>", unsafe_allow_html=True)
+
+            # ── Field extraction completeness ─────────────────────────────────
+            st.markdown('<p style="font-size:.78rem;font-weight:600;color:#9e8880;letter-spacing:.05em;margin:.5rem 0 .4rem 0;">FIELD EXTRACTION COMPLETENESS</p>', unsafe_allow_html=True)
+
+            TRACKED_FIELDS = {
+                "pain_score":   "🔴 Pain",
+                "mood_score":   "😊 Mood",
+                "energy_score": "⚡ Energy",
+                "steps":        "👣 Steps",
+                "sleep_hours":  "😴 Sleep",
+                "meals_count":  "🍽️ Meals",
+            }
+            fc1, fc2, fc3 = st.columns(3)
+            field_cols = [fc1, fc2, fc3]
+            for idx, (field, label) in enumerate(TRACKED_FIELDS.items()):
+                col = field_cols[idx % 3]
+                if field == "meals_count":
+                    filled = len(pdf[pdf["meals_count"] > 0])
+                else:
+                    filled = len(pdf[pdf[field].notna()]) if field in pdf.columns else 0
+                pct = round(filled / total * 100) if total else 0
+                ok  = pct >= 70
+                col.markdown(f"""
+                <div style='background:#ffffff;border:1px solid #e8ddd6;border-radius:8px;
+                     padding:.6rem .9rem;margin-bottom:.4rem;'>
+                  <div style='display:flex;justify-content:space-between;font-size:.8rem;'>
+                    <span style='color:#2c1810;font-weight:500;'>{label}</span>
+                    <span style='color:{"#7cb69b" if ok else "#e8857a"};font-weight:600;'>{pct}%</span>
+                  </div>
+                  <div style='height:5px;background:#e8ddd6;border-radius:3px;margin-top:.4rem;'>
+                    <div style='width:{pct}%;height:5px;background:{"#7cb69b" if ok else "#e8857a"};border-radius:3px;'></div>
+                  </div>
+                  <div style='font-size:.68rem;color:#9e8880;margin-top:.2rem;'>{filled}/{total} messages</div>
+                </div>""", unsafe_allow_html=True)
+
+            st.markdown("<div style='height:.8rem'></div>", unsafe_allow_html=True)
+
+            # ── Recent parse log table ────────────────────────────────────────
+            st.markdown('<p style="font-size:.78rem;font-weight:600;color:#9e8880;letter-spacing:.05em;margin:.5rem 0 .4rem 0;">RECENT PARSE LOG</p>', unsafe_allow_html=True)
+
+            SOURCE_EMOJI = {
+                "llama_attempt1": "🟢 LLaMA #1",
+                "llama_attempt2": "🟡 LLaMA #2",
+                "regex_fallback": "🔴 Regex",
+            }
+            rows = []
+            for _, row in pdf.head(20).iterrows():
+                rows.append({
+                    "Date":       str(row.get("log_date",""))[:10],
+                    "Source":     SOURCE_EMOJI.get(row.get("parse_source",""), row.get("parse_source","")),
+                    "Fields":     f"{row.get('fields_extracted',0)}/17",
+                    "Pain":       f"{row['pain_score']:.0f}/10" if pd.notna(row.get('pain_score')) else "—",
+                    "Mood":       f"{row['mood_score']:.0f}/10" if pd.notna(row.get('mood_score')) else "—",
+                    "Energy":     f"{row['energy_score']:.0f}/10" if pd.notna(row.get('energy_score')) else "—",
+                    "Steps":      int(row["steps"]) if pd.notna(row.get("steps")) else "—",
+                    "Meals":      int(row.get("meals_count", 0)),
+                    "Message":    str(row.get("raw_message",""))[:60] + "…",
+                    "Time":       str(row.get("created_at",""))[:16],
+                })
+
+            st.markdown(html_table(pd.DataFrame(rows)), unsafe_allow_html=True)
+            st.download_button("⬇️ Download parse log CSV",
+                               pdf.to_csv(index=False),
+                               "parse_quality_log.csv", "text/csv")
+
+            # ── Tips if quality is poor ───────────────────────────────────────
+            tips = []
+            if llm_rate < 80:
+                tips.append("⚠️ LLaMA success rate is low — Ollama may be slow or the model needs more context.")
+            if completeness < 60:
+                tips.append("💡 Low field completeness — try being more specific in messages e.g. 'pain 4/10, mood good, slept 7hrs'.")
+            if regex / total > 0.2:
+                tips.append("🔁 High regex fallback rate — check if Ollama is running with `ollama ps`.")
+            if tips:
+                st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
+                for tip in tips:
+                    st.warning(tip)
+
+    except Exception as e:
+        st.error(f"Could not load parse logs: {e}")
+        st.caption("This tab populates after your first WhatsApp message post-update.")
+
 
 st.markdown("---")
 st.caption("SQLite · All local · No external services")

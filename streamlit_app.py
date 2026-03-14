@@ -21,6 +21,9 @@ components.html("""
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
+  /* Hide Streamlit's auto-generated multipage nav at top of sidebar */
+  [data-testid="stSidebarNav"] { display: none !important; }
+
   html, body, [data-testid="stAppViewContainer"] { background: #fdf6f0 !important; }
   section[data-testid="stMain"] > div { background: #fdf6f0 !important; }
   section[data-testid="stSidebar"] { background: #ffffff !important; border-right: 1px solid #e8ddd6 !important; }
@@ -91,13 +94,28 @@ const css = `
     border: 1px solid #e8ddd6 !important;
   }
 
-  /* Chat input */
+  /* Chat input — full override including container */
+  [data-testid="stChatInput"] { background: #ffffff !important; }
+  [data-testid="stChatInput"] > div { background: #ffffff !important; }
+  [data-testid="stChatInputContainer"] { background: #ffffff !important; }
+  [data-testid="stChatInputContainer"] > div { background: #ffffff !important; }
   [data-testid="stChatInput"] textarea {
     background: #ffffff !important;
     color: #2c1810 !important;
     border: 1px solid #e8ddd6 !important;
     border-radius: 24px !important;
     font-family: 'DM Sans', sans-serif !important;
+  }
+  /* Bottom bar that contains chat input */
+  [data-testid="stBottom"] { background: #fdf6f0 !important; }
+  [data-testid="stBottom"] > div { background: #fdf6f0 !important; }
+  [data-testid="stBottom"] > div > div { background: #fdf6f0 !important; }
+  [data-testid="stBottom"] > div > div > div { background: #fdf6f0 !important; }
+  /* The dark overlay behind chat input */
+  .stChatFloatingInputContainer { background: #fdf6f0 !important; }
+  section[data-testid="stMain"] [data-testid="stBottom"] {
+    background: #fdf6f0 !important;
+    border-top: 1px solid #e8ddd6 !important;
   }
 
   /* Scrollbar */
@@ -173,6 +191,14 @@ def submit_feedback(sid, score):
 with st.sidebar:
     # Small brand heading
     st.markdown('<p style="font-size:.95rem;font-weight:700;margin:0;padding:.2rem 0;">🌸 EndoResearch AI</p>', unsafe_allow_html=True)
+
+    # ── Page navigation ───────────────────────────────────────────────────────
+    nav_col1, nav_col2 = st.columns(2)
+    with nav_col1:
+        st.page_link("streamlit_app.py", label="🔬 Research AI", use_container_width=True)
+    with nav_col2:
+        st.page_link("pages/My_Health_Tracker.py", label="💜 Health Tracker", use_container_width=True)
+
     st.markdown("---")
 
     health = check_health()

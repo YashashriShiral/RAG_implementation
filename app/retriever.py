@@ -13,7 +13,7 @@ causing the LLM to hallucinate connections or cite papers incorrectly.
 """
 
 from __future__ import annotations
-import re
+import re   
 from typing import List, Tuple
 import cohere
 from loguru import logger
@@ -71,7 +71,10 @@ def bm25_retrieve(query, bm25, corpus, k) -> List[Document]:
 
 
 def vector_retrieve(query, vectorstore, k) -> List[Document]:
-    return vectorstore.similarity_search(query, k=k)
+    # BGE models need this prefix at query time for best performance
+    # (model was trained with this instruction prefix for retrieval tasks)
+    prefixed_query = f"Represent this sentence for searching relevant passages: {query}"
+    return vectorstore.similarity_search(prefixed_query, k=k)
 
 
 def cohere_rerank(

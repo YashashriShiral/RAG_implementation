@@ -30,6 +30,8 @@ from app.ingestion import run_ingestion, load_vectorstore, load_bm25_index, get_
 from app.retriever import HybridRetriever
 from app.graph.graph import RAGGraphRunner
 from app import monitor_db
+from app.daily_log_db import init_daily_log_table
+from app.whatsapp_routes import router as whatsapp_router, start_weekly_scheduler
 
 settings = get_settings()
 
@@ -63,6 +65,10 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Index not ready ({e}). Run POST /ingest first.")
         _runner = None
 
+    # ── WhatsApp health tracker ───────────────────────────────────────────────
+    init_daily_log_table()       # creates data/health_tracker.db if needed
+    start_weekly_scheduler()     # Sunday 7pm auto-reports
+
     yield
     logger.info("API shutdown.")
 
@@ -82,6 +88,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── WhatsApp routes ───────────────────────────────────────────────────────────
+app.include_router(whatsapp_router)
 
 
 # ── Request / Response models ─────────────────────────────────────────────────

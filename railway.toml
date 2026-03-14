@@ -4,7 +4,7 @@ dockerfilePath = "Dockerfile.railway"
 
 [deploy]
 startCommand = "bash start.sh railway"
-healthcheckPath = "/health"
+healthcheckPath = "/ping"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

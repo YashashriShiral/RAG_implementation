@@ -2,22 +2,24 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps
 RUN apt-get update && apt-get install -y \
     curl build-essential git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python deps
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app
+# Install CPU-only torch first from PyTorch index (small ~200MB vs 800MB GPU)
+RUN pip install --no-cache-dir \
+    torch==2.5.1+cpu \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Install everything else
+RUN pip install --no-cache-dir -r requirements.txt \
+    --extra-index-url https://download.pytorch.org/whl/cpu
+
 COPY . .
 
-# Create data dirs (SQLite + ChromaDB + PDFs)
 RUN mkdir -p data/pdfs data/chroma_db data
-
-# Make start script executable
 RUN chmod +x start.sh
 
 EXPOSE 8000 8501

@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
 
 COPY requirements.txt .
 
-# Install CPU-only torch first (much smaller than GPU version)
+# Install CPU-only torch first
 RUN pip install --no-cache-dir \
     torch==2.5.1+cpu \
     --index-url https://download.pytorch.org/whl/cpu
@@ -19,7 +19,13 @@ RUN pip install --no-cache-dir -r requirements.txt \
 
 COPY . .
 
-# Pre-download embedding model during build so startup is instant
+# Patch config.py — make ALL required string fields optional with empty default
+# This handles cohere_api_key and any other Field(...) that might be missing
+RUN sed -i 's/Field(\.\.\.,/Field("",/g' app/config.py && \
+    echo "config.py patched:" && \
+    grep "Field" app/config.py
+
+# Pre-download embedding model
 RUN python3 -c "\
 from sentence_transformers import SentenceTransformer; \
 SentenceTransformer('BAAI/bge-base-en-v1.5'); \

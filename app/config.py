@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     )
 
     # ── Cohere (Reranking) ────────────────────────────────────────────────────
-    cohere_api_key:      str = Field(...,                    env="COHERE_API_KEY")
+    cohere_api_key: str = Field("", env="COHERE_API_KEY")
     cohere_rerank_model: str = Field("rerank-english-v3.0", env="COHERE_RERANK_MODEL")
 
     # ── ChromaDB ─────────────────────────────────────────────────────────────

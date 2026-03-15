@@ -52,17 +52,20 @@ async def lifespan(app: FastAPI):
         doc_count   = vectorstore._collection.count()
 
         if doc_count == 0:
-            logger.warning("ChromaDB empty! Run: python -m app.ingestion")
+            logger.warning("ChromaDB empty — RAG disabled. Upload PDFs via /upload-pdf or POST /ingest.")
+            _runner = None
         else:
             logger.info(f"ChromaDB loaded: {doc_count} chunks")
-
-        bm25, corpus = load_bm25_index()
-        retriever    = HybridRetriever(vectorstore, bm25, corpus)
-        _runner      = RAGGraphRunner(retriever)
-        logger.success("LangGraph RAG pipeline ready!")
+            bm25, corpus = load_bm25_index()
+            retriever    = HybridRetriever(vectorstore, bm25, corpus)
+            _runner      = RAGGraphRunner(retriever)
+            logger.success("LangGraph RAG pipeline ready!")
 
     except FileNotFoundError as e:
-        logger.warning(f"Index not ready ({e}). Run POST /ingest first.")
+        logger.warning(f"Index not ready ({e}) — RAG disabled. Run POST /ingest after uploading PDFs.")
+        _runner = None
+    except Exception as e:
+        logger.warning(f"RAG startup failed ({e}) — continuing without RAG.")
         _runner = None
 
     # ── WhatsApp health tracker ───────────────────────────────────────────────
@@ -147,6 +150,19 @@ def _run_ingestion_background():
 async def ping():
     """Instant response — used by Railway health check during startup."""
     return {"status": "ok"}
+
+
+@app.get("/")
+async def root():
+    """Root redirect — tells users where the UI is."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse({
+        "app": "Endometriosis Research AI",
+        "status": "running",
+        "ui": "Open Streamlit on port 8501",
+        "docs": "/docs",
+        "health": "/health",
+    })
 
 
 @app.get("/health", response_model=HealthResponse)

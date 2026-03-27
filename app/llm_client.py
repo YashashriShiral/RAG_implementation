@@ -12,39 +12,37 @@ Usage:
 import os, requests, json
 from typing import Optional
 
-# ── Config ────────────────────────────────────────────────────────────────────
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL   = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.2-3b-instruct:free")
-
-OLLAMA_URL   = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434") + "/api/generate"
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
+# ── Config — read at call time so Railway env vars are always picked up ───────
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 def llm_complete(system: str, prompt: str, max_tokens: int = 400, temperature: float = 0.4) -> str:
     """
     Complete a prompt using OpenRouter (cloud) or Ollama (local).
-    Automatically picks based on OPENROUTER_API_KEY env var.
-    Returns plain text response or empty string on failure.
+    Reads env vars at call time — works correctly on Railway.
     """
-    if OPENROUTER_API_KEY:
-        return _openrouter(system, prompt, max_tokens, temperature)
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    if api_key:
+        return _openrouter(system, prompt, max_tokens, temperature, api_key)
     else:
         return _ollama(system, prompt, max_tokens, temperature)
 
 
-def _openrouter(system: str, prompt: str, max_tokens: int, temperature: float) -> str:
+def _openrouter(system: str, prompt: str, max_tokens: int, temperature: float, api_key: str = "") -> str:
     """Call OpenRouter API — OpenAI-compatible format."""
+    if not api_key:
+        api_key = os.getenv("OPENROUTER_API_KEY", "")
+    model = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.2-3b-instruct:free")
     try:
         r = requests.post(
             OPENROUTER_URL,
             headers={
-                "Authorization":  f"Bearer {OPENROUTER_API_KEY}",
+                "Authorization":  f"Bearer {api_key}",
                 "Content-Type":   "application/json",
                 "HTTP-Referer":   "https://github.com/YashashriShiral/RAG_implementation",
                 "X-Title":        "Endo Tracker",
             },
             json={
-                "model":       OPENROUTER_MODEL,
+                "model":       model,
                 "max_tokens":  max_tokens,
                 "temperature": temperature,
                 "messages": [
@@ -64,11 +62,13 @@ def _openrouter(system: str, prompt: str, max_tokens: int, temperature: float) -
 
 def _ollama(system: str, prompt: str, max_tokens: int, temperature: float) -> str:
     """Call local Ollama — fallback when no API key set."""
+    ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434") + "/api/generate"
+    ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
     try:
         r = requests.post(
-            OLLAMA_URL,
+            ollama_url,
             json={
-                "model":   OLLAMA_MODEL,
+                "model":   ollama_model,
                 "prompt":  prompt,
                 "system":  system,
                 "stream":  False,

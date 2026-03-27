@@ -152,6 +152,19 @@ async def ping():
     return {"status": "ok"}
 
 
+@app.get("/")
+async def root():
+    """Root redirect — tells users where the UI is."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse({
+        "app": "Endometriosis Research AI",
+        "status": "running",
+        "ui": "Open Streamlit on port 8501",
+        "docs": "/docs",
+        "health": "/health",
+    })
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health():
     doc_count = 0

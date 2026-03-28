@@ -262,11 +262,11 @@ with st.sidebar:
                     "sleep_hours":        float(log_sleep),
                     "on_period":          1 if log_period else 0,
                     "cycle_day":          int(log_cycle_day) if log_cycle_day else None,
-                    "pain_locations":     [p.strip() for p in log_pain_loc.split(",") if p.strip()] + (period_symptoms if period_symptoms else []),
-                    "notes":              (f"Period flow: {period_flow}. " if period_flow else "") + 
-                                         (f"Symptoms: {', '.join(period_symptoms)}. " if period_symptoms else "") +
-                                         (f"Relief: {', '.join(period_relief)}. " if period_relief else "") +
-                                         (log_notes.strip() if log_notes.strip() else ""),
+                    "period_flow":        period_flow if log_period else None,
+                    "period_symptoms":    period_symptoms if period_symptoms else [],
+                    "period_relief":      period_relief if period_relief else [],
+                    "pain_locations":     [p.strip() for p in log_pain_loc.split(",") if p.strip()],
+                    "notes":              log_notes.strip() or None,
                     "herbal_drinks":      [h.strip() for h in log_herbal.split(",") if h.strip()],
                     "medicines":          [m.strip() for m in log_meds.split(",") if m.strip()],
                     "meals":              [m.strip() for m in log_meals.split(",") if m.strip()],
@@ -1109,26 +1109,34 @@ with tab2:
     if not period_df.empty:
         st.markdown('<p style="font-size:.82rem;font-weight:600;color:#9e8880;letter-spacing:.06em;margin:.8rem 0 .4rem 0;">PERIOD SYMPTOM HISTORY</p>', unsafe_allow_html=True)
         period_logs = period_df.copy()
-        # Extract symptom keywords from notes and pain_locations
         symptom_counts = {}
         flow_counts = {}
-        SYMPTOMS = ["Cramps","Lower back pain","Bloating","Headache","Nausea",
-                    "Fatigue","Mood swings","Breast tenderness","Spotting",
-                    "Clots","Diarrhoea","Leg pain","Shoulder pain","cramps","back pain"]
-        FLOWS = ["Spotting","Light","Medium","Heavy","Very Heavy"]
+
         for _, row in period_logs.iterrows():
-            notes = str(row.get("notes","") or "")
-            locs  = row.get("pain_locations") or []
-            if isinstance(locs, str):
-                try: locs = json.loads(locs)
-                except: locs = [locs]
-            combined = notes + " " + " ".join(locs if locs else [])
-            for s in SYMPTOMS:
-                if s.lower() in combined.lower():
-                    symptom_counts[s] = symptom_counts.get(s, 0) + 1
-            for f in FLOWS:
-                if f.lower() in notes.lower():
-                    flow_counts[f] = flow_counts.get(f, 0) + 1
+            # Read from proper columns first
+            symptoms = row.get("period_symptoms") or []
+            if isinstance(symptoms, str):
+                try: symptoms = json.loads(symptoms)
+                except: symptoms = [s.strip() for s in symptoms.split(",") if s.strip()]
+            for s in symptoms:
+                if s: symptom_counts[s] = symptom_counts.get(s, 0) + 1
+
+            flow = row.get("period_flow")
+            if flow: flow_counts[flow] = flow_counts.get(flow, 0) + 1
+
+            # Fallback: parse from pain_locations + notes for old entries
+            if not symptoms:
+                locs = row.get("pain_locations") or []
+                if isinstance(locs, str):
+                    try: locs = json.loads(locs)
+                    except: locs = [locs]
+                notes = str(row.get("notes","") or "")
+                SYMPTOM_KEYWORDS = ["Cramps","cramps","Bloating","Headache","Nausea",
+                    "Fatigue","Mood swings","Clots","Diarrhoea","back pain"]
+                combined = notes + " " + " ".join(locs if locs else [])
+                for s in SYMPTOM_KEYWORDS:
+                    if s.lower() in combined.lower():
+                        symptom_counts[s.title()] = symptom_counts.get(s.title(), 0) + 1
 
         if symptom_counts:
             sc1, sc2 = st.columns(2)

@@ -24,6 +24,9 @@ class HealthLog(BaseModel):
     pain_locations:      Optional[List[str]] = None
     on_period:           Optional[bool]  = False
     cycle_day:           Optional[int]   = Field(None, ge=1, le=35)
+    period_flow:         Optional[str]   = None  # Spotting/Light/Medium/Heavy/Very Heavy
+    period_symptoms:     Optional[List[str]] = None  # cramps, bloating, etc
+    period_relief:       Optional[str]   = None  # what helped
     herbal_drinks:       Optional[List[str]] = None
     medicines:           Optional[List[str]] = None
     meditation_minutes:  Optional[int]   = Field(None, ge=0)
@@ -119,9 +122,15 @@ Rules:
 - Scale: pain/mood/energy all 1-10. Always infer a number from natural language — never return null if the user mentioned the concept
 - "period day 2" → on_period: true, cycle_day: 2
 - "got my period", "period started", "period day 1" → on_period: true, cycle_day: 1
-- "spotting", "light flow", "heavy flow", "very heavy flow" → note in notes field
-- "cramps", "painful period", "bad cramps" → pain_score 7-9, add "cramps" to pain_locations
-- "period was painful", "horrible cramps" → pain_score: 8, pain_locations: ["lower abdomen", "cramps"]
+- "spotting" → on_period: true, period_flow: "Spotting"
+- "light flow", "light period" → period_flow: "Light"  
+- "heavy flow", "heavy period" → period_flow: "Heavy"
+- "very heavy flow" → period_flow: "Very Heavy"
+- "cramps", "painful period", "bad cramps" → pain_score 7-9, period_symptoms: ["Cramps"]
+- "period was painful", "horrible cramps" → pain_score: 8, period_symptoms: ["Cramps"]
+- "bloating", "bloated" → period_symptoms: ["Bloating"]
+- "headache during period" → period_symptoms: ["Headache"]
+- "heat pad helped", "hot water bottle" → period_relief: "Heat pad"
 - "light period", "mild cramps" → pain_score: 4
 - "Steps -1000" or "Steps- 1000" → steps: 1000 (the dash is a separator, always positive integer)
 - "20 min yoga", "yoga 30 min", "gentle yoga" → exercise_type: "yoga", exercise_minutes: 20/30

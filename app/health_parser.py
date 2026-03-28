@@ -120,6 +120,8 @@ Rules:
 - "okay mood", "alright mood", "decent mood" → mood_score: 5.0
 - "good mood", "great mood", "happy", "positive" → mood_score: 8.0
 - Scale: pain/mood/energy all 1-10. Always infer a number from natural language — never return null if the user mentioned the concept
+- "Date: 2026-03-15" or "date 15 march" or "for march 15" → log_date: "2026-03-15"
+- "yesterday" → log_date: yesterday's date
 - "period day 2" → on_period: true, cycle_day: 2
 - "got my period", "period started", "period day 1" → on_period: true, cycle_day: 1
 - "spotting" → on_period: true, period_flow: "Spotting"
@@ -272,6 +274,19 @@ def _regex_parse(text: str, today: str) -> dict:
     mood_score  = find_score(["mood","feeling","feel"]) or _infer_from_words(MOOD_WORDS, t)
     energy_score = find_score(["energy","energi"]) or _infer_from_words(ENERGY_WORDS, t)
 
+    # Extract explicit date from message
+    import re as _re2
+    date_match = _re2.search(r'(?:date[:\s]+)?(\d{4}-\d{2}-\d{2})', t)
+    if not date_match:
+        # Try "15 march 2026" or "march 15" formats
+        import datetime as _dt
+        for fmt in [r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})', r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})']:
+            m = _re2.search(fmt, t)
+            if m:
+                date_match = m
+                break
+    explicit_date = date_match.group(1) if date_match and len(date_match.group(1)) == 10 else today
+
     steps = None
     # Handle "Steps -1000" or "Steps: 1000" or "steps 1000" — dash is separator not minus
     m = re.search(r'steps?\s*[-:=]?\s*(\d[\d,]+)', t) or re.search(r'(\d[\d,]+)\s*steps?', t)
@@ -301,7 +316,7 @@ def _regex_parse(text: str, today: str) -> dict:
         if exercise_type: break
 
     return {
-        "log_date":           today,
+        "log_date":           explicit_date,
         "steps":              steps,
         "meals":              None,
         "mood_score":         mood_score,

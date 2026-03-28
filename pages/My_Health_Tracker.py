@@ -208,7 +208,15 @@ with st.sidebar:
     st.caption("Or send a WhatsApp message to your bot")
 
     with st.form("manual_log", clear_on_submit=True):
-        log_date       = st.date_input("Date", value=date.today())
+        log_date_str   = st.text_input("Date (YYYY-MM-DD)", 
+                           value=str(date.today()),
+                           placeholder="2026-03-15",
+                           help="Enter any past date to log historic data")
+        try:
+            log_date = date.fromisoformat(log_date_str.strip())
+        except:
+            log_date = date.today()
+            st.caption(f"Using today: {log_date}")
         log_pain       = st.slider("Pain (1–10)", 1, 10, 5)
         log_mood       = st.slider("Mood (1–10)", 1, 10, 6)
         log_energy     = st.slider("Energy (1–10)", 1, 10, 6)
@@ -279,6 +287,85 @@ with st.sidebar:
     st.markdown('<p style="font-size:.82rem;font-weight:600;margin:0 0 .3rem 0;">📲 WhatsApp logging</p>', unsafe_allow_html=True)
     st.caption("Once Twilio is set up, just send:")
     st.code("Steps 7200, ate dal rice,\nfeeling 6/10, mild cramps,\nperiod day 2, ginger tea,\nibuprofen, meditated 15 min", language="text")
+    st.markdown("---")
+
+    # ── Historic CSV Import ───────────────────────────────────────────────────
+    st.markdown('<p style="font-size:.82rem;font-weight:600;margin:0 0 .3rem 0;">📥 Import historic data</p>', unsafe_allow_html=True)
+    st.caption("Upload past logs via CSV")
+
+    # Download template button
+    import io as _io
+    template_cols = ["date","pain_score","mood_score","energy_score","steps",
+                     "sleep_hours","meditation_minutes","on_period","cycle_day",
+                     "period_flow","period_symptoms","meals","herbal_drinks",
+                     "medicines","notes","exercise_type","exercise_minutes"]
+    template_rows = [
+        {"date":"2026-01-15","pain_score":6,"mood_score":7,"energy_score":5,
+         "steps":4500,"sleep_hours":7.5,"meditation_minutes":10,"on_period":0,
+         "cycle_day":"","period_flow":"","period_symptoms":"",
+         "meals":"dal rice, sabji","herbal_drinks":"ginger tea",
+         "medicines":"","notes":"felt okay","exercise_type":"yoga","exercise_minutes":30},
+        {"date":"2026-01-16","pain_score":8,"mood_score":5,"energy_score":3,
+         "steps":1200,"sleep_hours":6,"meditation_minutes":0,"on_period":1,
+         "cycle_day":1,"period_flow":"Heavy","period_symptoms":"Cramps, Bloating",
+         "meals":"khichdi, curd","herbal_drinks":"turmeric milk",
+         "medicines":"ibuprofen","notes":"bad cramps day","exercise_type":"","exercise_minutes":0},
+    ]
+    template_df = pd.DataFrame(template_rows, columns=template_cols)
+    template_csv = template_df.to_csv(index=False)
+    st.download_button("⬇️ Download CSV template", template_csv,
+                       "endo_log_template.csv", "text/csv", use_container_width=True)
+
+    uploaded_csv = st.file_uploader("Upload filled CSV", type=["csv"], key="csv_import")
+    if uploaded_csv:
+        try:
+            import_df = pd.read_csv(uploaded_csv)
+            required = ["date"]
+            if not all(c in import_df.columns for c in required):
+                st.error("CSV must have a 'date' column")
+            else:
+                imported = 0
+                errors   = 0
+                for _, row in import_df.iterrows():
+                    try:
+                        def _safe(val, default=None):
+                            return default if pd.isna(val) or val == "" else val
+
+                        symptoms = _safe(row.get("period_symptoms",""))
+                        symptoms_list = [s.strip() for s in str(symptoms).split(",") if s.strip()] if symptoms else []
+
+                        upsert_daily_log({
+                            "log_date":           str(row["date"])[:10],
+                            "pain_score":         float(_safe(row.get("pain_score"), 0)) or None,
+                            "mood_score":         float(_safe(row.get("mood_score"), 0)) or None,
+                            "energy_score":       float(_safe(row.get("energy_score"), 0)) or None,
+                            "steps":              int(_safe(row.get("steps"), 0)) or None,
+                            "sleep_hours":        float(_safe(row.get("sleep_hours"), 0)) or None,
+                            "meditation_minutes": int(_safe(row.get("meditation_minutes"), 0)) or None,
+                            "on_period":          int(_safe(row.get("on_period"), 0)),
+                            "cycle_day":          int(_safe(row.get("cycle_day"), 0)) or None,
+                            "period_flow":        _safe(row.get("period_flow")),
+                            "period_symptoms":    symptoms_list,
+                            "meals":              [m.strip() for m in str(_safe(row.get("meals",""),"")).split(",") if m.strip()],
+                            "herbal_drinks":      [h.strip() for h in str(_safe(row.get("herbal_drinks",""),"")).split(",") if h.strip()],
+                            "medicines":          [m.strip() for m in str(_safe(row.get("medicines",""),"")).split(",") if m.strip()],
+                            "notes":              _safe(row.get("notes")),
+                            "exercise_type":      _safe(row.get("exercise_type")),
+                            "exercise_minutes":   int(_safe(row.get("exercise_minutes"), 0)) or None,
+                        })
+                        imported += 1
+                    except Exception as e:
+                        errors += 1
+
+                if imported:
+                    st.success(f"✅ Imported {imported} entries!")
+                    st.session_state["db_version"] = st.session_state.get("db_version", 0) + 1
+                    st.rerun()
+                if errors:
+                    st.warning(f"⚠️ {errors} rows had errors — check date format (YYYY-MM-DD)")
+        except Exception as e:
+            st.error(f"CSV error: {e}")
+
     st.markdown("---")
     st.caption("LLaMA 3.2 · LangGraph · BGE · Cohere")
 

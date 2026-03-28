@@ -20,7 +20,7 @@ from typing import Optional
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 DB_PATH    = Path(os.getenv("HEALTH_DB_PATH", str(_REPO_ROOT / "data" / "health_tracker.db")))
 
-LIST_FIELDS  = ["meals", "pain_locations", "herbal_drinks", "medicines"]
+LIST_FIELDS  = ["meals", "pain_locations", "herbal_drinks", "medicines", "period_symptoms", "period_relief"]
 SCORE_FIELDS = ["pain_score", "mood_score", "energy_score"]
 
 
@@ -45,6 +45,9 @@ def init_daily_log_table():
                 pain_locations      TEXT,
                 on_period           INTEGER DEFAULT 0,
                 cycle_day           INTEGER,
+                period_flow         TEXT,
+                period_symptoms     TEXT,
+                period_relief       TEXT,
                 herbal_drinks       TEXT,
                 medicines           TEXT,
                 meditation_minutes  INTEGER,
@@ -73,6 +76,9 @@ def init_daily_log_table():
             ("nutrition_fat_g",     "REAL"),
             ("nutrition_fiber_g",   "REAL"),
             ("nutrition_iron_mg",   "REAL"),
+            ("period_flow",         "TEXT"),
+            ("period_symptoms",     "TEXT"),
+            ("period_relief",       "TEXT"),
         ]:
             try:
                 conn.execute(f"ALTER TABLE daily_log ADD COLUMN {col} {typ}")

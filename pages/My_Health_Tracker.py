@@ -14,6 +14,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 import streamlit as st
+import json
 import streamlit.components.v1 as components
 import pandas as pd
 import plotly.graph_objects as go
@@ -60,6 +61,22 @@ const css = `
   [data-baseweb="popover"] { background: #ffffff !important; }
   li[role="option"] { background: #ffffff !important; color: #2c1810 !important; }
   li[role="option"]:hover { background: #fdf6f0 !important; }
+  /* Fix black number inputs */
+  [data-testid="stNumberInput"] input { background: #ffffff !important; color: #2c1810 !important; border: 1px solid #e8ddd6 !important; border-radius: 8px !important; }
+  [data-testid="stNumberInput"] button { background: #f8f3ef !important; color: #2c1810 !important; border: 1px solid #e8ddd6 !important; }
+  /* Fix black text area */
+  textarea { background: #ffffff !important; color: #2c1810 !important; border: 1px solid #e8ddd6 !important; border-radius: 8px !important; }
+  /* Fix black checkbox */
+  [data-testid="stCheckbox"] { background: transparent !important; }
+  [data-testid="stCheckbox"] label { color: #2c1810 !important; }
+  [data-baseweb="checkbox"] div { border-color: #c0392b !important; }
+  /* Fix code blocks in sidebar */
+  [data-testid="stCode"] { background: #f8f3ef !important; }
+  [data-testid="stCode"] pre { background: #f8f3ef !important; color: #2c1810 !important; }
+  code { background: #f8f3ef !important; color: #2c1810 !important; }
+  /* Fix form submit button */
+  [data-testid="stFormSubmitButton"] button { background: #c0392b !important; color: #ffffff !important; border: none !important; border-radius: 8px !important; font-weight: 600 !important; }
+  [data-testid="stFormSubmitButton"] button:hover { background: #a93226 !important; }
   [data-testid="stSidebar"] .stButton > button {
     font-size: .78rem !important; padding: .3rem .6rem !important; border-radius: 6px !important;
     background: transparent !important; border: 1px solid transparent !important;
@@ -198,8 +215,27 @@ with st.sidebar:
         log_steps      = st.number_input("Steps", 0, 50000, 0, step=500)
         log_meditation = st.number_input("Meditation (min)", 0, 180, 0)
         log_sleep      = st.number_input("Sleep (hrs)", 0.0, 24.0, 7.0, step=0.5)
-        log_period     = st.checkbox("On period today")
-        log_cycle_day  = st.number_input("Cycle day", 1, 35, 1) if log_period else None
+        # ── Period Tracking ─────────────────────────────────────────────────
+        st.markdown('<p style="font-size:.78rem;font-weight:600;color:#9e8880;letter-spacing:.04em;margin:.5rem 0 .2rem 0;">🩸 PERIOD & CYCLE</p>', unsafe_allow_html=True)
+        log_period = st.checkbox("On period today", key="form_period")
+        if log_period:
+            log_cycle_day = st.number_input("Period day", 1, 10, 1, key="form_cycle_day")
+            period_flow = st.select_slider("Flow", options=["Spotting", "Light", "Medium", "Heavy", "Very Heavy"], value="Medium", key="form_flow")
+            period_symptoms = st.multiselect("Symptoms today", 
+                ["Cramps", "Lower back pain", "Bloating", "Headache", "Nausea", 
+                 "Fatigue", "Mood swings", "Breast tenderness", "Spotting", 
+                 "Clots", "Diarrhoea", "Leg pain", "Shoulder pain"],
+                key="form_symptoms")
+            period_relief = st.multiselect("What helped?",
+                ["Heat pad", "Painkillers", "Rest", "Yoga/stretching", 
+                 "Hot water bottle", "Ginger tea", "Massage", "Sleep", "Nothing worked"],
+                key="form_relief")
+        else:
+            log_cycle_day = None
+            period_flow = None
+            period_symptoms = []
+            period_relief = []
+
         log_pain_loc   = st.text_input("Pain location(s)", placeholder="lower abdomen, back")
         log_herbal     = st.text_input("Herbal drinks", placeholder="ginger tea, ashwagandha")
         log_meds       = st.text_input("Medicines", placeholder="ibuprofen")
@@ -226,11 +262,15 @@ with st.sidebar:
                     "sleep_hours":        float(log_sleep),
                     "on_period":          1 if log_period else 0,
                     "cycle_day":          int(log_cycle_day) if log_cycle_day else None,
-                    "pain_locations":     [p.strip() for p in log_pain_loc.split(",") if p.strip()],
+                    "pain_locations":     [p.strip() for p in log_pain_loc.split(",") if p.strip()] + (period_symptoms if period_symptoms else []),
+                    "notes":              (f"Period flow: {period_flow}. " if period_flow else "") + 
+                                         (f"Symptoms: {', '.join(period_symptoms)}. " if period_symptoms else "") +
+                                         (f"Relief: {', '.join(period_relief)}. " if period_relief else "") +
+                                         (log_notes.strip() if log_notes.strip() else ""),
                     "herbal_drinks":      [h.strip() for h in log_herbal.split(",") if h.strip()],
                     "medicines":          [m.strip() for m in log_meds.split(",") if m.strip()],
                     "meals":              [m.strip() for m in log_meals.split(",") if m.strip()],
-                    "notes":              log_notes.strip() or None,
+
                 })
                 st.success(f"✅ Saved for {log_date}!")
                 st.rerun()
@@ -1064,6 +1104,57 @@ with tab2:
     st.markdown(html, unsafe_allow_html=True)
 
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+
+    # ── Period symptom summary ────────────────────────────────────────────────
+    if not period_df.empty:
+        st.markdown('<p style="font-size:.82rem;font-weight:600;color:#9e8880;letter-spacing:.06em;margin:.8rem 0 .4rem 0;">PERIOD SYMPTOM HISTORY</p>', unsafe_allow_html=True)
+        period_logs = period_df.copy()
+        # Extract symptom keywords from notes and pain_locations
+        symptom_counts = {}
+        flow_counts = {}
+        SYMPTOMS = ["Cramps","Lower back pain","Bloating","Headache","Nausea",
+                    "Fatigue","Mood swings","Breast tenderness","Spotting",
+                    "Clots","Diarrhoea","Leg pain","Shoulder pain","cramps","back pain"]
+        FLOWS = ["Spotting","Light","Medium","Heavy","Very Heavy"]
+        for _, row in period_logs.iterrows():
+            notes = str(row.get("notes","") or "")
+            locs  = row.get("pain_locations") or []
+            if isinstance(locs, str):
+                try: locs = json.loads(locs)
+                except: locs = [locs]
+            combined = notes + " " + " ".join(locs if locs else [])
+            for s in SYMPTOMS:
+                if s.lower() in combined.lower():
+                    symptom_counts[s] = symptom_counts.get(s, 0) + 1
+            for f in FLOWS:
+                if f.lower() in notes.lower():
+                    flow_counts[f] = flow_counts.get(f, 0) + 1
+
+        if symptom_counts:
+            sc1, sc2 = st.columns(2)
+            with sc1:
+                st.markdown("**Most common symptoms:**")
+                for sym, cnt in sorted(symptom_counts.items(), key=lambda x: -x[1])[:5]:
+                    pct = int(cnt / len(period_logs) * 100)
+                    st.markdown(f"""
+                    <div style='margin-bottom:.3rem;'>
+                      <div style='display:flex;justify-content:space-between;font-size:.8rem;'>
+                        <span>{sym}</span><span style='color:#c0392b;font-weight:600;'>{pct}%</span>
+                      </div>
+                      <div style='height:4px;background:#e8ddd6;border-radius:2px;'>
+                        <div style='width:{pct}%;height:4px;background:#e8857a;border-radius:2px;'></div>
+                      </div>
+                    </div>""", unsafe_allow_html=True)
+            with sc2:
+                if flow_counts:
+                    st.markdown("**Typical flow:**")
+                    for flow, cnt in sorted(flow_counts.items(), key=lambda x: -x[1]):
+                        flow_emoji = {"Spotting":"🔴","Light":"🟠","Medium":"🟡","Heavy":"🔴","Very Heavy":"🔴"}.get(flow,"🔴")
+                        st.markdown(f"- {flow_emoji} {flow}: {cnt} period(s)")
+                # Average pain during period
+                avg_period_pain = period_logs["pain_score"].mean() if "pain_score" in period_logs.columns else None
+                if avg_period_pain:
+                    st.markdown(f"**Avg pain during period:** {avg_period_pain:.1f}/10")
 
     # ── Cycle length chart ────────────────────────────────────────────────────
     if len(lengths) >= 1:

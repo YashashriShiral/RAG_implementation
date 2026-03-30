@@ -339,6 +339,35 @@ async def delete_log(log_date: str):
     return {"status": "ok" if ok else "not_found"}
 
 
+@app.post("/logs/insight")
+async def generate_insight(data: dict, background_tasks: BackgroundTasks):
+    """Generate AI insight for a manually logged entry (sidebar form)."""
+    def _run_insight(data):
+        try:
+            from app.daily_log_db import get_logs, save_insight
+            from app.knowledge_engine import get_food_and_cycle_insight, get_cycle_context
+            all_logs = get_logs(days=120)
+            cycle_ctx = get_cycle_context(all_logs)
+            recent_7  = get_logs(days=7)
+            insight = get_food_and_cycle_insight(
+                today_data=data,
+                logs=recent_7,
+                cycle_day=cycle_ctx.get("cycle_day"),
+                phase=cycle_ctx.get("phase_key"),
+            )
+            if insight:
+                save_insight(
+                    log_date=data.get("log_date"),
+                    user_message="[dashboard entry]",
+                    ai_reply=insight,
+                    insight_type="daily"
+                )
+        except Exception as e:
+            logger.warning(f"Insight generation failed: {e}")
+    background_tasks.add_task(_run_insight, data)
+    return {"status": "generating"}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

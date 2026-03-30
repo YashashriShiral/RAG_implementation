@@ -149,7 +149,9 @@ Rules:
 - meals = ONLY solid food, never drinks
 - "Exercise -", "Exercise:" followed by activity → extract exercise_type and exercise_minutes
 - "did yoga for 20 mins", "yoga 20 mins" → exercise_type: "yoga", exercise_minutes: 20
-- Any medicine/tablet → medicines list
+- "Vitamin D3", "Vitamin B12", "vitamin c", supplements → medicines list with full name preserved
+- Always preserve full medicine/vitamin names, never truncate (e.g. "Vitamin D3" not "d3")
+- Any medicine/tablet/supplement → medicines list
 - Today's date: {today}"""
 
 EXERCISE_TYPES = {

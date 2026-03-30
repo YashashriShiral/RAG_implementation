@@ -335,11 +335,14 @@ with st.sidebar:
         log_meds       = st.text_input("Medicines", placeholder="ibuprofen")
         log_meals      = st.text_input("Meals", placeholder="dal rice, salad")
         st.markdown('<p style="font-size:.75rem;font-weight:600;color:#9e8880;margin:.3rem 0 0 0;">🏃 Exercise / Yoga / Stretch</p>', unsafe_allow_html=True)
-        log_exercise_type = st.selectbox("Type", 
+        log_exercise_type = st.selectbox("Type",
             ["None", "Yoga", "Stretching", "Walking", "Running", "Gym", "Swimming", "Cycling", "Dance", "Pilates"],
             index=0)
-        log_exercise_mins = st.number_input("Duration (min)", 0, 180, 0, step=5) if log_exercise_type != "None" else 0
-        log_exercise_int  = st.selectbox("Intensity", ["Gentle", "Moderate", "Intense"], index=1) if log_exercise_type != "None" else None
+        col_ex1, col_ex2 = st.columns(2)
+        with col_ex1:
+            log_exercise_mins = st.number_input("Duration (min)", 0, 180, 0, step=5)
+        with col_ex2:
+            log_exercise_int = st.selectbox("Intensity", ["Gentle", "Moderate", "Intense"], index=1)
         log_notes      = st.text_area("Notes", placeholder="How are you feeling?", height=68)
 
         if st.form_submit_button("💜 Save entry", use_container_width=True):

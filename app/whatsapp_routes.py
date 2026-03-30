@@ -40,8 +40,8 @@ router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
 # ─────────────────────────────────────────────────────────────────────────────
 def send_whatsapp(to: str, body: str):
     """Send WhatsApp message. Falls back to console log if Twilio not set up."""
-    if len(body) > 1550:
-        body = body[:1520] + "\n\n…(truncated)"
+    if len(body) > 1590:
+        body = body[:1560] + "\n\n…"
     logger.info(f"[SEND] to={to[:20]} len={len(body)}")
     if twilio_client and to:
         try:

@@ -1487,7 +1487,7 @@ with tab3:
             if nutr_str and log.get("nutrition_protein_g"):
                 nutr_str += f"  💪 {log['nutrition_protein_g']:.0f}g protein"
 
-            raw = log.get("raw_message","")
+            raw = log.get("raw_message") or ""
             if " | " in raw: raw = raw.split(" | ")[0]
             day_insights = hist_insight_by_date.get(d, [])
             is_today = (d == str(__import__("datetime").date.today()))

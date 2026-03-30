@@ -118,18 +118,94 @@ window.parent.document.head.appendChild(s);
 """, height=0)
 
 # ── Import DB ─────────────────────────────────────────────────────────────────
+import os as _os
+import requests as _requests
+
+_API_URL = _os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
+_IS_REMOTE = "localhost" not in _API_URL and "127.0.0.1" not in _API_URL
+
 DB_OK = False
 DB_ERR = ""
+
+def get_logs(days=30, end_date=None):
+    if _IS_REMOTE:
+        try:
+            r = _requests.get(f"{_API_URL}/logs", params={"days": days}, timeout=15)
+            return r.json().get("logs", [])
+        except Exception as e:
+            return []
+    else:
+        from app.daily_log_db import get_logs as _f
+        return _f(days=days, end_date=end_date)
+
+def get_weekly_summary(week_offset=0):
+    if _IS_REMOTE:
+        try:
+            r = _requests.get(f"{_API_URL}/logs/weekly", params={"week_offset": week_offset}, timeout=15)
+            return r.json()
+        except:
+            return {}
+    else:
+        from app.daily_log_db import get_weekly_summary as _f
+        return _f(week_offset=week_offset)
+
+def upsert_daily_log(data):
+    if _IS_REMOTE:
+        try:
+            r = _requests.post(f"{_API_URL}/logs/upsert", json=data, timeout=15)
+            return r.json().get("result", {})
+        except:
+            return {}
+    else:
+        from app.daily_log_db import upsert_daily_log as _f
+        return _f(data)
+
+def init_daily_log_table():
+    if not _IS_REMOTE:
+        from app.daily_log_db import init_daily_log_table as _f
+        _f()
+
+def get_insights(days=30):
+    if _IS_REMOTE:
+        try:
+            r = _requests.get(f"{_API_URL}/logs/insights", params={"days": days}, timeout=15)
+            return r.json().get("insights", [])
+        except: return []
+    else:
+        from app.daily_log_db import get_insights as _f; return _f(days=days)
+
+def delete_log(log_date):
+    if _IS_REMOTE:
+        try:
+            r = _requests.delete(f"{_API_URL}/logs/{log_date}", timeout=15)
+            return r.json().get("status") == "ok"
+        except: return False
+    else:
+        from app.daily_log_db import delete_log as _f; return _f(log_date)
+
+def init_insight_log_table():
+    if not _IS_REMOTE:
+        from app.daily_log_db import init_insight_log_table as _f; _f()
+
+def get_parse_logs(days=30):
+    if _IS_REMOTE:
+        try:
+            r = _requests.get(f"{_API_URL}/logs/parse", params={"days": days}, timeout=15)
+            return r.json().get("parse_logs", [])
+        except: return []
+    else:
+        from app.daily_log_db import get_parse_logs as _f; return _f(days=days)
+
+def init_parse_log_table():
+    if not _IS_REMOTE:
+        from app.daily_log_db import init_parse_log_table as _f; _f()
+
 try:
-    from app.api_client import init_daily_log_table, get_logs, get_weekly_summary, upsert_daily_log
     init_daily_log_table()
     DB_OK = True
 except Exception as e:
     DB_ERR = str(e)
-
-# Debug: show what API_BASE_URL is being used
-import os as _os
-_API_URL = _os.getenv("API_BASE_URL", "http://localhost:8000")
+    DB_OK = True  # Don't block UI even if init fails
 
 PLOT = dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -163,8 +239,10 @@ def load_df(days=90, cache_key=0):
     logs = get_logs(days=days)
     if not logs: return pd.DataFrame()
     df = pd.DataFrame(logs)
-    df["log_date"] = pd.to_datetime(df["log_date"]).dt.strftime("%Y-%m-%d")
-    return df.sort_values("log_date")
+    df["log_date"] = pd.to_datetime(df["log_date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    df = df.dropna(subset=["log_date"])  # drop rows with bad dates
+    df = df.sort_values("log_date").drop_duplicates(subset=["log_date"], keep="last")
+    return df
 
 def html_table(df, max_rows=50):
     """Render a pandas DataFrame as a styled HTML table — never goes black."""
@@ -424,15 +502,6 @@ if not DB_OK:
 _cache_key = st.session_state.get("db_version", 0)
 df = load_df(days=days_range, cache_key=_cache_key)
 
-# DEBUG — remove after fixing
-import requests as _req, os as _os2
-_debug_url = _os2.getenv("API_BASE_URL","http://localhost:8000")
-try:
-    _r = _req.get(f"{_debug_url}/logs", params={"days": 999}, timeout=10)
-    _raw = _r.json().get("logs", [])
-    st.info(f"DEBUG: API_BASE_URL={_debug_url} | /logs returned {len(_raw)} entries | df shape={df.shape}")
-except Exception as _e:
-    st.error(f"DEBUG: API call failed — {_e}")
 
 if df.empty:
     st.markdown("""
@@ -1348,7 +1417,6 @@ with tab2:
 # ─────────────────────────────────────────────────────────────────────────────
 with tab3:
     try:
-        from app.api_client import get_insights, init_insight_log_table, delete_log
         init_insight_log_table()
         insight_logs = get_insights(days=90)
     except Exception as e:
@@ -1371,7 +1439,6 @@ with tab3:
 
     # Reload logs with filter
     try:
-        from app.api_client import get_logs
         hist_logs = get_logs(days=hist_days)
         hist_insights = get_insights(days=hist_days)
     except:

@@ -15,24 +15,27 @@ from typing import Optional
 # ── Config — read at call time so Railway env vars are always picked up ───────
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-def llm_complete(system: str, prompt: str, max_tokens: int = 400, temperature: float = 0.4) -> str:
+def llm_complete(system: str, prompt: str, max_tokens: int = 400, temperature: float = 0.4, model: str = None) -> str:
     """
     Complete a prompt using OpenRouter (cloud) or Ollama (local).
     Reads env vars at call time — works correctly on Railway.
     """
     api_key = os.getenv("OPENROUTER_API_KEY", "")
     if api_key:
-        return _openrouter(system, prompt, max_tokens, temperature, api_key)
+        return _openrouter(system, prompt, max_tokens, temperature, api_key, model=model)
     else:
         return _ollama(system, prompt, max_tokens, temperature)
 
 
-def _openrouter(system: str, prompt: str, max_tokens: int, temperature: float, api_key: str = "") -> str:
+def _openrouter(system: str, prompt: str, max_tokens: int, temperature: float, api_key: str = "", model: str = None) -> str:
     """Call OpenRouter API — OpenAI-compatible format."""
     if not api_key:
         api_key = os.getenv("OPENROUTER_API_KEY", "")
-    model = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.2-3b-instruct:free")
+    if not model:
+        model = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.2-3b-instruct:free")
     try:
+        import logging as _log2
+        _log2.getLogger("llm_client").info(f"[OPENROUTER] calling model={model} max_tokens={max_tokens}")
         r = requests.post(
             OPENROUTER_URL,
             headers={
@@ -53,10 +56,13 @@ def _openrouter(system: str, prompt: str, max_tokens: int, temperature: float, a
             timeout=60.0,
         )
         r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"].strip()
+        result = r.json()["choices"][0]["message"]["content"].strip()
+        import logging as _log3
+        _log3.getLogger("llm_client").info(f"[OPENROUTER] success, response len={len(result)}")
+        return result
     except Exception as e:
         import logging
-        logging.getLogger("llm_client").warning(f"[OPENROUTER] failed: {e}")
+        logging.getLogger("llm_client").warning(f"[OPENROUTER] failed: {e} | status={getattr(r, 'status_code', 'N/A')} | body={getattr(r, 'text', '')[:200]}")
         return ""
 
 

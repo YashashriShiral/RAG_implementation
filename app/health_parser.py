@@ -142,7 +142,11 @@ Rules:
 - "gentle/restorative/yin" → exercise_intensity: "gentle"
 - "power/hot/vinyasa/intense" → exercise_intensity: "intense"
 - All foods mentioned → meals list
-- Herbal teas, kadha, golden milk → herbal_drinks list
+- "Drinks-", "Drinks:", "drank", "had" followed by drinks → herbal_drinks list
+- turmeric water, ginger tea, kadha, golden milk, lemon water → herbal_drinks
+- coffee, chai, green tea → herbal_drinks
+- "Exercise -", "Exercise:" followed by activity → extract exercise_type and exercise_minutes
+- "did yoga for 20 mins", "yoga 20 mins" → exercise_type: "yoga", exercise_minutes: 20
 - Any medicine/tablet → medicines list
 - Today's date: {today}"""
 

@@ -424,6 +424,16 @@ if not DB_OK:
 _cache_key = st.session_state.get("db_version", 0)
 df = load_df(days=days_range, cache_key=_cache_key)
 
+# DEBUG — remove after fixing
+import requests as _req, os as _os2
+_debug_url = _os2.getenv("API_BASE_URL","http://localhost:8000")
+try:
+    _r = _req.get(f"{_debug_url}/logs", params={"days": 999}, timeout=10)
+    _raw = _r.json().get("logs", [])
+    st.info(f"DEBUG: API_BASE_URL={_debug_url} | /logs returned {len(_raw)} entries | df shape={df.shape}")
+except Exception as _e:
+    st.error(f"DEBUG: API call failed — {_e}")
+
 if df.empty:
     st.markdown("""
     <div style='background:#ffffff;border:1px solid #e8ddd6;border-radius:12px;

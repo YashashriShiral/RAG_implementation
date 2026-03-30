@@ -304,6 +304,41 @@ async def stats():
     }
 
 
+# ── Health Tracker endpoints (so Streamlit can read from FastAPI's DB) ────────
+
+@app.get("/logs")
+async def get_logs(days: int = 30):
+    from app.daily_log_db import get_logs as _get_logs
+    return {"logs": _get_logs(days=days)}
+
+@app.get("/logs/weekly")
+async def get_weekly(week_offset: int = 0):
+    from app.daily_log_db import get_weekly_summary
+    return get_weekly_summary(week_offset=week_offset)
+
+@app.get("/logs/insights")
+async def get_insights(days: int = 30):
+    from app.daily_log_db import get_insights as _get_insights
+    return {"insights": _get_insights(days=days)}
+
+@app.get("/logs/parse")
+async def get_parse_logs(days: int = 30):
+    from app.daily_log_db import get_parse_logs as _get_parse_logs
+    return {"parse_logs": _get_parse_logs(days=days)}
+
+@app.post("/logs/upsert")
+async def upsert_log(data: dict):
+    from app.daily_log_db import upsert_daily_log
+    result = upsert_daily_log(data)
+    return {"status": "ok", "result": result}
+
+@app.delete("/logs/{log_date}")
+async def delete_log(log_date: str):
+    from app.daily_log_db import delete_log as _delete_log
+    ok = _delete_log(log_date)
+    return {"status": "ok" if ok else "not_found"}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

@@ -73,7 +73,7 @@ class _LLMWrapper:
         system = "You are a specialized medical research assistant for endometriosis. Answer based on provided research paper excerpts. Write clear, detailed prose answers. No inline citations like [1] or [7]."
         return llm_complete(system=system, prompt=prompt,
                            max_tokens=1024, temperature=self.temperature,
-                           model="google/gemini-flash-1.5-8b")
+                           model="meta-llama/llama-4-maverick:free")
 
 def get_llm(temperature=0.1):
     return _LLMWrapper(temperature=temperature)

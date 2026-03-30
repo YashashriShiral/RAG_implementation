@@ -271,10 +271,14 @@ RULES:
         "3. A positive observation + encouragement for tomorrow\n"
     )
 
+    import logging as _log
+    _log.getLogger("knowledge_engine").info(f"[INSIGHT] calling LLM, prompt len={len(prompt)}")
     insight = _llama(system, prompt, max_tokens=600)
+    _log.getLogger("knowledge_engine").info(f"[INSIGHT] LLM returned {len(insight) if insight else 0} chars")
 
     # Fallback if LLaMA fails
     if not insight:
+        _log.getLogger("knowledge_engine").warning("[INSIGHT] LLM returned empty — using fallback")
         lines = []
         if all_foods:
             lines.append(f"🍽️ Logged: {', '.join(all_foods[:4])}")

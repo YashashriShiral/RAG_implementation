@@ -127,6 +127,10 @@ try:
 except Exception as e:
     DB_ERR = str(e)
 
+# Debug: show what API_BASE_URL is being used
+import os as _os
+_API_URL = _os.getenv("API_BASE_URL", "http://localhost:8000")
+
 PLOT = dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
     font=dict(family="DM Sans", color="#2c1810", size=12),
@@ -204,6 +208,10 @@ with st.sidebar:
                               format_func=lambda x: f"Last {x} days")
 
     st.markdown("---")
+    if not DB_OK:
+        st.error(f"DB Error: {DB_ERR}")
+    else:
+        st.caption(f"API: {_API_URL[:40]}")
     st.markdown('<p style="font-size:.82rem;font-weight:600;margin:0 0 .3rem 0;">✏️ Log today</p>', unsafe_allow_html=True)
     st.caption("Or send a WhatsApp message to your bot")
 

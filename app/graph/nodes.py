@@ -36,12 +36,11 @@ RELEVANCE_THRESHOLD = 0.15
 RAG_PROMPT = """You are a specialized medical research assistant for endometriosis.
 Answer ONLY based on the provided research paper excerpts below.
 
-STRICT RULES — follow exactly:
-1. Write a clear, flowing answer in plain prose. No bullet points.
-2. Do NOT include any inline citations, brackets, or numbers like [1], [7], [5][14] in your answer text.
-3. Do NOT reference paper titles inline in your answer text either.
-4. If the answer is not in the sources say: "This information is not available in the provided research papers."
-5. After your answer, write nothing else — the system will append the references automatically.
+RULES:
+1. Write a clear, detailed, flowing answer in plain prose. No bullet points.
+2. Do NOT include inline citations like [1] or [7] in your answer.
+3. If the answer is not in the sources say: "This information is not available in the provided research papers."
+4. Be thorough — give a complete answer with relevant details from the research.
 
 === RESEARCH PAPER EXCERPTS ===
 {context}
@@ -49,16 +48,10 @@ STRICT RULES — follow exactly:
 
 QUESTION: {question}
 
-ANSWER (plain prose, no inline citations):"""
+ANSWER:"""
 
 WEB_PROMPT = """You are a medical research assistant for endometriosis.
-The user's question was NOT found in the local research paper database.
-Answer using ONLY the web search results below.
-Start your answer with exactly this line:
-"This information is not available in the provided research papers."
-Then on a new line write:
-"However, according to web sources:"
-Then give a clear helpful answer citing source URLs in brackets.
+The question was NOT found in the local research paper database.
 
 === WEB SEARCH RESULTS ===
 {web_results}
@@ -66,7 +59,9 @@ Then give a clear helpful answer citing source URLs in brackets.
 
 QUESTION: {question}
 
-ANSWER:"""
+Start your answer with: "This information is not available in the provided research papers."
+Then write: "However, according to web sources:"
+Then give a detailed, helpful answer."""
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -75,10 +70,10 @@ class _LLMWrapper:
     def __init__(self, temperature=0.1):
         self.temperature = temperature
     def invoke(self, prompt: str) -> str:
-        # Split system instructions from user prompt if RAG_PROMPT format detected
-        system = "You are a specialized medical research assistant for endometriosis. Answer based on provided research paper excerpts. Write clear prose answers with no inline citations like [1] or [7]."
+        system = "You are a specialized medical research assistant for endometriosis. Answer based on provided research paper excerpts. Write clear, detailed prose answers. No inline citations like [1] or [7]."
         return llm_complete(system=system, prompt=prompt,
-                           max_tokens=1024, temperature=self.temperature)
+                           max_tokens=1024, temperature=self.temperature,
+                           model="google/gemini-flash-1.5-8b")
 
 def get_llm(temperature=0.1):
     return _LLMWrapper(temperature=temperature)
@@ -93,7 +88,7 @@ def format_context(docs: List[Document]) -> tuple[str, List[Dict]]:
         title = meta.get("paper_title", meta.get("source_file", "Unknown"))
         page  = meta.get("page", "?")
         score = meta.get("rerank_score", "N/A")
-        parts.append(f"PAPER: [{title}] | Page {page}\n{doc.page_content.strip()}")
+        parts.append(f"PAPER: [{title}] | Page {page}\n{doc.page_content.strip()[:600]}")
         source_map.append({
             "index":        i,
             "paper_title":  title,

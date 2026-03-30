@@ -220,7 +220,7 @@ def get_food_and_cycle_insight(
     if all_foods:
         food_str = ", ".join(all_foods[:6])
     elif raw_msg:
-        food_str = raw_msg[:200]  # use raw text so insight is specific
+        food_str = raw_msg[:500]  # use raw text so insight is specific
     else:
         food_str = "mixed Indian foods"
     rag_query = f"endometriosis {phase or 'menstrual'} phase diet {food_str} inflammation pain management"
@@ -248,7 +248,7 @@ def get_food_and_cycle_insight(
     system = """You are a warm endometriosis health coach. Give short, specific, actionable daily insights.
 
 STRICT RULES:
-- Max 80 words total
+- Max 200 words total
 - Mention specific foods/drinks by name from the log (never say "unspecified" or "your foods")
 - 2 insights only: one food tip, one cycle/pattern tip
 - No preamble, no repeating what they ate
@@ -270,7 +270,7 @@ STRICT RULES:
         "Start immediately with the first insight."
     )
 
-    insight = _llama(system, prompt, max_tokens=150)
+    insight = _llama(system, prompt, max_tokens=400)
 
     # Fallback if LLaMA fails
     if not insight:

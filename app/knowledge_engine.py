@@ -245,15 +245,16 @@ def get_food_and_cycle_insight(
             ex_context = _web_search(f"endometriosis {exercise} exercise {phase or 'menstrual phase'} pain relief")[:400]
 
     # Build LLaMA prompt
-    system = """You are a warm endometriosis health coach. Give short, specific, actionable daily insights.
+    system = """You are a warm, knowledgeable endometriosis health coach giving personalised daily insights.
 
-STRICT RULES:
-- Max 200 words total
-- Mention specific foods/drinks by name from the log (never say "unspecified" or "your foods")
-- 2 insights only: one food tip, one cycle/pattern tip
-- No preamble, no repeating what they ate
-- WhatsApp format: plain text, minimal emoji, *bold* key points only
-- If foods unclear, give a general endo-friendly tip for their cycle phase"""
+RULES:
+- 150-250 words total
+- Be warm and encouraging, not clinical
+- Mention specific foods and drinks logged by name
+- Give 3 insights: food/nutrition tip, cycle phase advice, one encouragement
+- Reference research where relevant (e.g. turmeric has curcumin which reduces endo inflammation)
+- WhatsApp format: plain text, minimal emoji, *bold* key points
+- End with one short encouraging line"""
 
     ex_line = f"\nExercise: {exercise} {ex_mins}min" if exercise else ""
     prompt = (
@@ -264,13 +265,13 @@ STRICT RULES:
         + ex_line +
         f"\n\n{week_summary}\n\n"
         f"Research: {research_context[:400] if research_context else ''}\n\n"
-        "Give exactly 2 insights (no headers, no numbering, no repeating food list):\n"
-        "First: specific tip about today's foods and endo inflammation\n"
-        "Second: cycle-phase tip or weekly pattern observation\n"
-        "Start immediately with the first insight."
+        "Give 3 specific insights (no headers, start immediately):\n"
+        "1. How today\'s specific foods/drinks affect endo inflammation\n"
+        "2. What this cycle phase means for their body + one tip\n"
+        "3. A positive observation + encouragement for tomorrow\n"
     )
 
-    insight = _llama(system, prompt, max_tokens=400)
+    insight = _llama(system, prompt, max_tokens=600)
 
     # Fallback if LLaMA fails
     if not insight:

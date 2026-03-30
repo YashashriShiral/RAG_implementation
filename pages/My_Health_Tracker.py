@@ -121,7 +121,7 @@ window.parent.document.head.appendChild(s);
 DB_OK = False
 DB_ERR = ""
 try:
-    from app.daily_log_db import init_daily_log_table, get_logs, get_weekly_summary, upsert_daily_log
+    from app.api_client import init_daily_log_table, get_logs, get_weekly_summary, upsert_daily_log
     init_daily_log_table()
     DB_OK = True
 except Exception as e:
@@ -1330,7 +1330,7 @@ with tab2:
 # ─────────────────────────────────────────────────────────────────────────────
 with tab3:
     try:
-        from app.daily_log_db import get_insights, init_insight_log_table, delete_log
+        from app.api_client import get_insights, init_insight_log_table, delete_log
         init_insight_log_table()
         insight_logs = get_insights(days=90)
     except Exception as e:
@@ -1353,7 +1353,7 @@ with tab3:
 
     # Reload logs with filter
     try:
-        from app.daily_log_db import get_logs
+        from app.api_client import get_logs
         hist_logs = get_logs(days=hist_days)
         hist_insights = get_insights(days=hist_days)
     except:

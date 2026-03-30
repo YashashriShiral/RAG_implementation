@@ -346,7 +346,7 @@ with st.sidebar:
             if not DB_OK:
                 st.error(f"DB error: {DB_ERR}")
             else:
-                upsert_daily_log({
+                log_data = {
                     "log_date":           str(log_date),
                     "pain_score":         float(log_pain),
                     "mood_score":         float(log_mood),
@@ -364,9 +364,25 @@ with st.sidebar:
                     "herbal_drinks":      [h.strip() for h in log_herbal.split(",") if h.strip()],
                     "medicines":          [m.strip() for m in log_meds.split(",") if m.strip()],
                     "meals":              [m.strip() for m in log_meals.split(",") if m.strip()],
+                    "exercise_type":      log_exercise_type if log_exercise_type != "None" else None,
+                    "exercise_minutes":   int(log_exercise_mins) if log_exercise_mins else None,
+                    "exercise_intensity": log_exercise_int,
+                }
+                upsert_daily_log(log_data)
 
-                })
-                st.success(f"✅ Saved for {log_date}!")
+                # Generate AI insight for sidebar entries via FastAPI
+                try:
+                    insight_resp = _requests.post(
+                        f"{_API_URL}/logs/insight",
+                        json=log_data, timeout=30
+                    )
+                    if insight_resp.status_code == 200:
+                        st.success(f"✅ Saved for {log_date} with AI insights!")
+                    else:
+                        st.success(f"✅ Saved for {log_date}!")
+                except:
+                    st.success(f"✅ Saved for {log_date}!")
+                st.session_state["db_version"] = st.session_state.get("db_version", 0) + 1
                 st.rerun()
 
     st.markdown("---")
@@ -1496,7 +1512,7 @@ with tab3:
                 left, right = st.columns([1, 1])
                 with left:
                     st.markdown("**📝 You logged:**")
-                    st.markdown(f"<div style='{UBOX}'>{raw[:400] if raw else '(no message saved)'}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='{UBOX}'>{raw[:400] if raw else '📱 Logged via dashboard form'}</div>", unsafe_allow_html=True)
                     if nutr_str: st.caption(nutr_str)
                     meals  = log.get("meals") or []
                     herbal = log.get("herbal_drinks") or []
@@ -1519,7 +1535,7 @@ with tab3:
                             ai_clean = ins.get("ai_reply","").replace("*","").replace("_","")
                             st.markdown(f"<div style='{AIBOX}'>{ai_clean[:1200]}{'…' if len(ai_clean)>1200 else ''}</div>", unsafe_allow_html=True)
                     else:
-                        st.markdown(f"<div style='color:#9e8880;font-size:.83rem;padding:.6rem;'>💬 No AI reply saved for this entry.</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='color:#9e8880;font-size:.83rem;padding:.6rem;'>💬 AI insights are generated for WhatsApp entries. Send a message via WhatsApp to get personalised insights for today.</div>", unsafe_allow_html=True)
 
                 # Delete
                 if st.button("🗑️ Delete entry", key=f"ht_del_{d}", type="secondary"):

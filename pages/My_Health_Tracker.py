@@ -368,20 +368,16 @@ with st.sidebar:
                     "exercise_minutes":   int(log_exercise_mins) if log_exercise_mins else None,
                     "exercise_intensity": log_exercise_int,
                 }
-                upsert_daily_log(log_data)
-
-                # Generate AI insight for sidebar entries via FastAPI
                 try:
-                    insight_resp = _requests.post(
-                        f"{_API_URL}/logs/insight",
-                        json=log_data, timeout=30
-                    )
-                    if insight_resp.status_code == 200:
-                        st.success(f"✅ Saved for {log_date} with AI insights!")
-                    else:
-                        st.success(f"✅ Saved for {log_date}!")
-                except:
-                    st.success(f"✅ Saved for {log_date}!")
+                    result = upsert_daily_log(log_data)
+                    # Generate AI insight in background
+                    try:
+                        _requests.post(f"{_API_URL}/logs/insight", json=log_data, timeout=5)
+                    except:
+                        pass  # non-fatal
+                    st.success(f"✅ Saved for {log_date}! Exercise: {log_data.get('exercise_type','none')} {log_data.get('exercise_minutes',0)}min")
+                except Exception as _save_err:
+                    st.error(f"Save failed: {_save_err}")
                 st.session_state["db_version"] = st.session_state.get("db_version", 0) + 1
                 st.rerun()
 
@@ -1514,11 +1510,62 @@ with tab3:
                     st.markdown("**📝 You logged:**")
                     st.markdown(f"<div style='{UBOX}'>{raw[:400] if raw else '📱 Logged via dashboard form'}</div>", unsafe_allow_html=True)
                     if nutr_str: st.caption(nutr_str)
+                    # Meals & drinks
                     meals  = log.get("meals") or []
                     herbal = log.get("herbal_drinks") or []
-                    if meals:  st.caption(f"🍽️ {', '.join(meals[:4])}")
-                    if herbal: st.caption(f"🍵 {', '.join(herbal[:3])}")
+                    meds   = log.get("medicines") or []
+                    if isinstance(meals, str):
+                        try: meals = __import__("json").loads(meals)
+                        except: meals = [meals]
+                    if isinstance(herbal, str):
+                        try: herbal = __import__("json").loads(herbal)
+                        except: herbal = [herbal]
+                    if isinstance(meds, str):
+                        try: meds = __import__("json").loads(meds)
+                        except: meds = [meds]
+                    if meals:  st.caption(f"🍽️ {', '.join([str(m) for m in meals[:5]])}")
+                    if herbal: st.caption(f"🍵 {', '.join([str(h) for h in herbal[:3]])}")
+                    if meds:   st.caption(f"💊 {', '.join([str(m) for m in meds[:3]])}")
                     if log.get("sleep_hours"): st.caption(f"😴 {log['sleep_hours']} hrs sleep")
+                    # Exercise
+                    ex_type = log.get("exercise_type") or ""
+                    ex_mins = log.get("exercise_minutes")
+                    ex_int  = log.get("exercise_intensity") or ""
+                    if ex_type and ex_type not in ("None", "nan", ""):
+                        ex_icon = {"yoga":"🧘","walking":"🚶","running":"🏃","stretching":"🤸",
+                                   "gym":"🏋️","swimming":"🏊","cycling":"🚴","dance":"💃","pilates":"🤸"}.get(ex_type.lower(),"🏃")
+                        ex_str = f"{ex_icon} {ex_type.title()}"
+                        if ex_mins: ex_str += f" · {int(ex_mins)} min"
+                        if ex_int:  ex_str += f" · {ex_int}"
+                        st.caption(ex_str)
+                    # Meditation
+                    if log.get("meditation_minutes"):
+                        st.caption(f"🧘 Meditation · {int(log['meditation_minutes'])} min")
+                    # Period details
+                    if log.get("on_period"):
+                        period_parts = ["🩸 Period"]
+                        if log.get("cycle_day"): period_parts.append(f"day {log['cycle_day']}")
+                        if log.get("period_flow"): period_parts.append(log["period_flow"])
+                        st.caption(" · ".join(period_parts))
+                        p_syms = log.get("period_symptoms") or []
+                        if isinstance(p_syms, str):
+                            try: p_syms = __import__("json").loads(p_syms)
+                            except: p_syms = [p_syms]
+                        if p_syms: st.caption(f"Symptoms: {', '.join([str(s) for s in p_syms[:4]])}")
+                        p_rel = log.get("period_relief") or []
+                        if isinstance(p_rel, str):
+                            try: p_rel = __import__("json").loads(p_rel)
+                            except: p_rel = [p_rel]
+                        if p_rel: st.caption(f"Relief: {', '.join([str(r) for r in p_rel[:3]])}")
+                    # Pain locations
+                    pain_locs = log.get("pain_locations") or []
+                    if isinstance(pain_locs, str):
+                        try: pain_locs = __import__("json").loads(pain_locs)
+                        except: pain_locs = [pain_locs]
+                    if pain_locs: st.caption(f"📍 Pain: {', '.join([str(p) for p in pain_locs[:3]])}")
+                    # Notes
+                    if log.get("notes") and not raw:
+                        st.caption(f"📝 {str(log['notes'])[:100]}")
 
                 with right:
                     if day_insights:

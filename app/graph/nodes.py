@@ -75,7 +75,9 @@ class _LLMWrapper:
     def __init__(self, temperature=0.1):
         self.temperature = temperature
     def invoke(self, prompt: str) -> str:
-        return llm_complete(system="", prompt=prompt,
+        # Split system instructions from user prompt if RAG_PROMPT format detected
+        system = "You are a specialized medical research assistant for endometriosis. Answer based on provided research paper excerpts. Write clear prose answers with no inline citations like [1] or [7]."
+        return llm_complete(system=system, prompt=prompt,
                            max_tokens=1024, temperature=self.temperature)
 
 def get_llm(temperature=0.1):

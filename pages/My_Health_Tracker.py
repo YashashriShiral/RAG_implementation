@@ -810,7 +810,7 @@ with tab1:
             all_meds = []
             if "medicines" in df.columns:
                 for lst in df["medicines"].dropna():
-                    if isinstance(lst, list): all_meds.extend([m.strip().lower() for m in lst if m.strip()])
+                    if isinstance(lst, list): all_meds.extend([m.strip().title() for m in lst if m.strip()])
             if all_meds:
                 counts = pd.Series(all_meds).value_counts().head(7)
                 fig5 = go.Figure(go.Bar(x=counts.values, y=counts.index, orientation="h",
@@ -826,7 +826,7 @@ with tab1:
             all_drinks = []
             if "herbal_drinks" in df.columns:
                 for lst in df["herbal_drinks"].dropna():
-                    if isinstance(lst, list): all_drinks.extend([d.strip().lower() for d in lst if d.strip()])
+                    if isinstance(lst, list): all_drinks.extend([d.strip().title() for d in lst if d.strip()])
             if all_drinks:
                 counts = pd.Series(all_drinks).value_counts().head(7)
                 pie_colors = ["#fce4ec","#f8bbd0","#f48fb1","#f06292","#ec407a","#e91e63","#c2185b"]
